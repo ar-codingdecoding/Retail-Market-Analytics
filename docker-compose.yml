@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  app:
+    build: ./app
+    volumes:
+      - ./app:/app
+    ports:
+      - "8000:8000"
+    # no depends_on to avoid circular dependency
+  dashboard:
+    build: ./dashboard
+    volumes:
+      - ./dashboard:/dashboard
+    ports:
+      - "8501:8501"
+    depends_on:
+      - app
