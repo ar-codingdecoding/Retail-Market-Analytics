@@ -156,6 +156,8 @@ STORE-INTELLIGENCE/
 ├── README.md
 │
 ├── sample_events.jsonl
+|__events.jsonl
+|
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
