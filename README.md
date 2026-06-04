@@ -156,8 +156,11 @@ STORE-INTELLIGENCE/
 ├── README.md
 │
 ├── sample_events.jsonl
+<<<<<<< HEAD
 |__events.jsonl
 |
+=======
+>>>>>>> da47b6b (Retail Market Analytics for Hackathon)
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
@@ -303,6 +306,7 @@ http://localhost:8000/docs
 
 ---
 
+<<<<<<< HEAD
 ## Sample Event Data
 
 The repository includes sample_events.jsonl and events.jsonl
@@ -313,6 +317,10 @@ These files can be used to reproduce dashboard analytics and API outputs.
 
 ## Assumptions
 
+=======
+## Assumptions
+
+>>>>>>> da47b6b (Retail Market Analytics for Hackathon)
 * Event data is generated from processed CCTV streams.
 * Sample event data is provided for demonstration.
 * SQLite is used for lightweight deployment and evaluation.
@@ -333,8 +341,13 @@ Additional technical documentation is available in:
 
 Ajay Raj
 
+<<<<<<< HEAD
 Email-id: ar.bppimt2022@gmail.com
 
 B.Tech Final Year
 
+=======
+B.Tech Final Year
+
+>>>>>>> da47b6b (Retail Market Analytics for Hackathon)
 Retail Market Analytics – Purplle Tech Challenge 2026 Submission
