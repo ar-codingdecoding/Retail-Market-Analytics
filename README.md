@@ -168,11 +168,8 @@ STORE-INTELLIGENCE/
 ├── README.md
 │
 ├── sample_events.jsonl
-<<<<<<< HEAD
 |__events.jsonl
 |
-=======
->>>>>>> da47b6b (Retail Market Analytics for Hackathon)
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
