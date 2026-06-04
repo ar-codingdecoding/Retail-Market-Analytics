@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 
 
 class EventStore:
@@ -8,10 +9,24 @@ class EventStore:
 
         self.file_path = "events.jsonl"
 
-        if not os.path.exists(self.file_path):
-            open(self.file_path, "w").close()
+        self.db_path = "store_intelligence.db"
 
-    def save(self, event):
+        if not os.path.exists(
+            self.file_path
+        ):
+            open(
+                self.file_path,
+                "w"
+            ).close()
+
+    def save(
+        self,
+        event
+    ):
+
+        # -------------------
+        # JSONL
+        # -------------------
 
         with open(
             self.file_path,
@@ -24,3 +39,63 @@ class EventStore:
             )
 
             f.write("\n")
+
+        # -------------------
+        # SQLITE
+        # -------------------
+
+        try:
+
+            conn = sqlite3.connect(
+                self.db_path
+            )
+
+            cursor = conn.cursor()
+
+            cursor.execute(
+                """
+                INSERT INTO events
+                (
+                    event_id,
+                    store_id,
+                    visitor_id,
+                    event_type,
+                    camera_id,
+                    zone_id,
+                    confidence,
+                    timestamp
+                )
+                VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+               (
+                event["event_id"],
+                event.get(
+                    "store_id",
+                    "STORE_1"
+                ),
+                str(
+                    event["visitor_id"]
+                ),
+                event["event_type"],
+                event["camera_id"],
+                event.get(
+                    "zone"
+                ),
+                float(
+                    event["confidence"]
+                ),
+                event["timestamp"]
+            )
+            )
+
+            conn.commit()
+
+            conn.close()
+
+        except Exception as e:
+
+            print(
+                "DB INSERT ERROR:",
+                e
+            )

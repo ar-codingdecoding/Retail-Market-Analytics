@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import cv2
+
 
 class ReIDManager:
 
@@ -13,7 +15,8 @@ class ReIDManager:
         self,
         visitor_id,
         center_x,
-        center_y
+        center_y,
+        histogram
     ):
 
         self.exited_people[
@@ -21,14 +24,19 @@ class ReIDManager:
         ] = {
             "x": center_x,
             "y": center_y,
-            "time": datetime.now()
+            "time": datetime.now(),
+            "hist": histogram
         }
 
     def check_reentry(
         self,
         center_x,
-        center_y
+        center_y,
+        histogram
     ):
+
+        if histogram is None:
+            return None
 
         now = datetime.now()
 
@@ -49,13 +57,31 @@ class ReIDManager:
 
                 continue
 
+            if data["hist"] is None:
+                continue
+
             distance = (
                 (center_x - data["x"]) ** 2 +
                 (center_y - data["y"]) ** 2
             ) ** 0.5
 
-            if distance < 150:
+            score = cv2.compareHist(
+                histogram,
+                data["hist"],
+                cv2.HISTCMP_CORREL
+            )
 
+            if distance < 100 and score > 0.90:
+
+                self.exited_people.pop(
+                    visitor_id,
+                    None
+                )
+                print(
+                    f"RE-ID MATCH -> old={visitor_id} "
+                    f"distance={distance:.1f} "
+                    f"score={score:.2f}"
+                )
                 return visitor_id
 
         return None

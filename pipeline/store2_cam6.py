@@ -1,8 +1,11 @@
+# billing area camera - queue detection, zone entry/exit, reid for re-entry
+
 from ultralytics import YOLO
 import supervision as sv
 import cv2
-
-from zones import CAM2_ZONES
+from datetime import datetime
+from staff_detector import StaffDetector
+from zones_store2 import CAM6_STORE2_ZONES
 from zone_detector import ZoneDetector
 from zone_tracker import ZoneTracker
 from reid_manager import ReIDManager
@@ -10,7 +13,7 @@ from event_generator import EventGenerator
 from event_store import EventStore
 from event_deduplicator import EventDeduplicator
 
-
+staff_detector = StaffDetector()
 # -----------------------------
 # TV REGION (IGNORE)
 # -----------------------------
@@ -22,23 +25,23 @@ TV_REGION = (
     300
 )
 
-STAFF_REGION = (
-    0,
-    200,
-    250,
-    650
-)
-def is_staff(center_x, center_y):
+# STAFF_REGION = (
+#     1020,
+#     300,
+#     1240,
+#     450
+# )
+# def is_staff(center_x, center_y):
 
-    x1, y1, x2, y2 = STAFF_REGION
+#     x1, y1, x2, y2 = STAFF_REGION
 
-    inside_staff_area = (
-        x1 <= center_x <= x2
-        and
-        y1 <= center_y <= y2
-    )
+#     inside_staff_area = (
+#         x1 <= center_x <= x2
+#         and
+#         y1 <= center_y <= y2
+#     )
 
-    return inside_staff_area
+#     return inside_staff_area
 
 # -----------------------------
 # INIT
@@ -54,7 +57,7 @@ tracker = sv.ByteTrack(
 )
 
 zone_detector = ZoneDetector(
-    CAM2_ZONES
+    CAM6_STORE2_ZONES
 )
 reid_manager = ReIDManager()
 last_person_data = {}
@@ -65,13 +68,21 @@ event_store = EventStore()
 deduplicator = EventDeduplicator()
 
 cap = cv2.VideoCapture(
-    "data/videos/CAM 2.mp4"
+    "data/videos/billing_area.mp4"
 )
+# queue_active = False
+last_queue_event = None
 
+QUEUE_COOLDOWN = 60
+queue_state = {}
 if not cap.isOpened():
 
     print("Cannot open video")
     exit()
+
+FRAME_SKIP = 3
+
+frame_count = 0
 
 # -----------------------------
 # LOOP
@@ -83,6 +94,11 @@ while True:
 
     if not ret:
         break
+
+    frame_count += 1
+
+    if frame_count % FRAME_SKIP != 0:
+        continue
 
     frame = cv2.resize(
         frame,
@@ -97,6 +113,7 @@ while True:
     detections = sv.Detections.from_ultralytics(
         result
     )
+    billing_count = 0
 
     # PERSON ONLY
 
@@ -138,7 +155,7 @@ while True:
 
     # DRAW ZONES
 
-    for zone_name, box in CAM2_ZONES.items():
+    for zone_name, box in CAM6_STORE2_ZONES.items():
 
         x1, y1, x2, y2 = box
 
@@ -160,25 +177,25 @@ while True:
             2
         )
 
-    sx1, sy1, sx2, sy2 = STAFF_REGION
+    # sx1, sy1, sx2, sy2 = STAFF_REGION
 
-    cv2.rectangle(
-        frame,
-        (sx1, sy1),
-        (sx2, sy2),
-        (0, 0, 255),
-        2
-    )
+    # cv2.rectangle(
+    #     frame,
+    #     (sx1, sy1),
+    #     (sx2, sy2),
+    #     (0, 0, 255),
+    #     2
+    # )
 
-    cv2.putText(
-        frame,
-        "STAFF AREA",
-        (sx1 + 20, sy1 + 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 0, 255),
-        2
-    )
+    # cv2.putText(
+    #     frame,
+    #     "STAFF AREA",
+    #     (sx1 + 20, sy1 + 40),
+    #     cv2.FONT_HERSHEY_SIMPLEX,
+    #     1,
+    #     (0, 0, 255),
+    #     2
+    # )
 
     if detections.tracker_id is not None:
 
@@ -203,6 +220,10 @@ while True:
 
             roi = frame[y1:y2, x1:x2]
             histogram = None
+            if staff_detector.is_staff(
+                roi
+            ):
+                continue
 
             if roi.size > 0:
                 hsv_roi = cv2.cvtColor(
@@ -243,24 +264,23 @@ while True:
             # IGNORE TV
             # -----------------------------
 
-            tx1, ty1, tx2, ty2 = TV_REGION
+            # tx1, ty1, tx2, ty2 = TV_REGION
 
-            if (
-                tx1 <= center_x <= tx2
-                and
-                ty1 <= center_y <= ty2
-            ):
-                continue
-            if is_staff(
-                center_x,
-                center_y
-            ):
-                continue
+            # if (
+            #     tx1 <= center_x <= tx2
+            #     and
+            #     ty1 <= center_y <= ty2
+            # ):
+            #     continue
+            # if is_staff(
+            #     center_x,
+            #     center_y
+            # ):
+            #     continue
             zone = zone_detector.get_zone(
                 center_x,
                 center_y
             )
-
             event = zone_tracker.update(
                 track_id,
                 zone
@@ -272,21 +292,54 @@ while True:
 
                 if deduplicator.should_save(
                     track_id,
-                    event_type
+                    event_type,
+                    zone_name
                 ):
 
                     data = EventGenerator.generate(
                         visitor_id=track_id,
                         event_type=event_type,
-                        camera_id="CAM2",
+                        camera_id="STORE2_CAM6",
+                        store_id="STORE_2",
                         zone=zone_name
                     )
 
-                    event_store.save(
-                        data
-                    )
+                    event_store.save(data)
 
                     print(data)
+            if zone == "BILLING":
+                billing_count += 1
+
+                if track_id not in queue_state:
+
+                    queue_state[track_id] = datetime.now()
+
+                else:
+
+                    wait_time = (
+                        datetime.now()
+                        -
+                        queue_state[track_id]
+                    ).total_seconds()
+
+                    if wait_time > 15:
+
+                        data = EventGenerator.generate(
+                            visitor_id=track_id,
+                            event_type="BILLING_QUEUE_JOIN",
+                            camera_id="STORE2_CAM6",
+                            store_id="STORE_2",
+                            zone="BILLING"
+                        )
+
+                        event_store.save(data)
+
+                        print(data)
+
+                        queue_state.pop(
+                            track_id,
+                            None
+                        )
 
             # DRAW BOX
 
@@ -353,6 +406,19 @@ while True:
                 person["y"],
                 person["hist"]
             )
+        if zone_name == "BILLING":
+
+            data = EventGenerator.generate(
+                visitor_id=visitor_id,
+                event_type="BILLING_QUEUE_ABANDON",
+                camera_id="STORE2_CAM6",
+                store_id="STORE_2",
+                zone="BILLING"
+            )
+
+            event_store.save(data)
+
+            print(data)    
 
         if deduplicator.should_save(
             visitor_id,
@@ -363,7 +429,8 @@ while True:
             data = EventGenerator.generate(
                 visitor_id=visitor_id,
                 event_type="ZONE_EXIT",
-                camera_id="CAM2",
+                camera_id="STORE2_CAM6",
+                store_id="STORE_2",
                 zone=zone_name
             )
 
@@ -371,10 +438,50 @@ while True:
                 data
             )
 
+            
+            print(data)
+
+    # Queue detection based on number of people at billing
+  
+
+    if billing_count >= 3:
+
+        now = datetime.now()
+
+        allow_event = False
+
+        if last_queue_event is None:
+
+            allow_event = True
+
+        else:
+
+            seconds = (
+                now - last_queue_event
+            ).total_seconds()
+
+            if seconds > QUEUE_COOLDOWN:
+
+                allow_event = True
+
+        if allow_event:
+
+            last_queue_event = now
+
+            data = EventGenerator.generate(
+                visitor_id=0,
+                event_type="QUEUE_DETECTED",
+                camera_id="STORE2_CAM6",
+                store_id="STORE_2",
+                zone="BILLING"
+            )
+
+            event_store.save(data)
+
             print(data)
 
     cv2.imshow(
-        "CAM2",
+        "STORE2_CAM6",
         frame
     )
 

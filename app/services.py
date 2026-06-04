@@ -3,22 +3,49 @@ from app.models import Event
 
 
 def get_metrics(store_id: str):
-
+    # print("Received:", store_id)
     db = SessionLocal()
+    if store_id == "ALL_STORE2":
 
-    total_events = db.query(Event).filter(
-        Event.camera_id.contains(store_id)
-    ).count()
+        cameras = [
+            "STORE2_CAM1",
+            "STORE2_CAM2",
+            "STORE2_CAM6"
+        ]
 
-    zone_enter = db.query(Event).filter(
-        Event.event_type == "ZONE_ENTER",
-        Event.camera_id.contains(store_id)
-    ).count()
+        total_events = db.query(Event).filter(
+            Event.camera_id.in_(cameras)
+        ).count()
 
-    zone_dwell = db.query(Event).filter(
-        Event.event_type == "ZONE_DWELL",
-        Event.camera_id.contains(store_id)
-    ).count()
+        zone_enter = db.query(Event).filter(
+            Event.event_type == "ZONE_ENTER",
+            Event.camera_id.in_(cameras)
+        ).count()
+
+        zone_dwell = db.query(Event).filter(
+            Event.event_type == "ZONE_DWELL",
+            Event.camera_id.in_(cameras)
+        ).count()
+
+    # -------------------------
+    # SINGLE CAMERA
+    # -------------------------
+
+    else:
+
+        total_events = db.query(Event).filter(
+            Event.camera_id == store_id
+        ).count()
+
+        zone_enter = db.query(Event).filter(
+            Event.event_type == "ZONE_ENTER",
+            Event.camera_id == store_id
+        ).count()
+
+        zone_dwell = db.query(Event).filter(
+            Event.event_type == "ZONE_DWELL",
+            Event.camera_id == store_id
+        ).count()
 
     db.close()
 
@@ -33,9 +60,36 @@ def get_heatmap(store_id: str):
 
     db = SessionLocal()
 
-    rows = db.query(Event).filter(
-        Event.camera_id.contains(store_id)
-    ).all()
+    if store_id == "ALL_STORE2":
+
+        cameras = [
+            "STORE2_CAM1",
+            "STORE2_CAM2",
+            "STORE2_CAM6"
+        ]
+
+        rows = db.query(Event).filter(
+            Event.camera_id.in_(cameras)
+        ).all()
+
+    elif store_id == "ALL_STORE1":
+
+        cameras = [
+            "CAM1",
+            "CAM2",
+            "CAM3",
+            "CAM5"
+        ]
+
+        rows = db.query(Event).filter(
+            Event.camera_id.in_(cameras)
+        ).all()
+
+    else:
+
+        rows = db.query(Event).filter(
+            Event.camera_id == store_id
+        ).all()
 
     zone_counts = {}
 
@@ -48,7 +102,7 @@ def get_heatmap(store_id: str):
                 row.visitor_id
             )
 
-        zone = row.zone
+        zone = row.zone_id
 
         if not zone:
             continue
@@ -58,8 +112,6 @@ def get_heatmap(store_id: str):
         )
 
     db.close()
-
-    # No data
 
     if len(zone_counts) == 0:
 
@@ -99,15 +151,54 @@ def get_funnel(store_id: str):
 
     db = SessionLocal()
 
-    entered = db.query(Event).filter(
-        Event.event_type == "ZONE_ENTER",
-        Event.camera_id.contains(store_id)
-    ).count()
+    if store_id == "ALL_STORE2":
 
-    dwell = db.query(Event).filter(
-        Event.event_type == "ZONE_DWELL",
-        Event.camera_id.contains(store_id)
-    ).count()
+        cameras = [
+            "STORE2_CAM1",
+            "STORE2_CAM2",
+            "STORE2_CAM6"
+        ]
+
+        entered = db.query(Event).filter(
+            Event.event_type == "ZONE_ENTER",
+            Event.camera_id.in_(cameras)
+        ).count()
+
+        dwell = db.query(Event).filter(
+            Event.event_type == "ZONE_DWELL",
+            Event.camera_id.in_(cameras)
+        ).count()
+
+    elif store_id == "ALL_STORE1":
+
+        cameras = [
+            "CAM1",
+            "CAM2",
+            "CAM3",
+            "CAM5"
+        ]
+
+        entered = db.query(Event).filter(
+            Event.event_type == "ZONE_ENTER",
+            Event.camera_id.in_(cameras)
+        ).count()
+
+        dwell = db.query(Event).filter(
+            Event.event_type == "ZONE_DWELL",
+            Event.camera_id.in_(cameras)
+        ).count()
+
+    else:
+
+        entered = db.query(Event).filter(
+            Event.event_type == "ZONE_ENTER",
+            Event.camera_id == store_id
+        ).count()
+
+        dwell = db.query(Event).filter(
+            Event.event_type == "ZONE_DWELL",
+            Event.camera_id == store_id
+        ).count()
 
     db.close()
 
@@ -235,9 +326,36 @@ def get_anomalies(store_id: str):
 
     db = SessionLocal()
 
-    total_events = db.query(Event).filter(
-        Event.camera_id.contains(store_id)
-    ).count()
+    if store_id == "ALL_STORE2":
+
+        cameras = [
+            "STORE2_CAM1",
+            "STORE2_CAM2",
+            "STORE2_CAM6"
+        ]
+
+        total_events = db.query(Event).filter(
+            Event.camera_id.in_(cameras)
+        ).count()
+
+    elif store_id == "ALL_STORE1":
+
+        cameras = [
+            "CAM1",
+            "CAM2",
+            "CAM3",
+            "CAM5"
+        ]
+
+        total_events = db.query(Event).filter(
+            Event.camera_id.in_(cameras)
+        ).count()
+
+    else:
+
+        total_events = db.query(Event).filter(
+            Event.camera_id == store_id
+        ).count()
 
     anomalies = []
 

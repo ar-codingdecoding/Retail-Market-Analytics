@@ -8,3 +8,7 @@ sqlalchemy
 pydantic
 pytest
 python-multipart
+streamlit
+pandas
+plotly
+requests

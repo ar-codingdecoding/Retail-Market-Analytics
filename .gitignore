@@ -1,13 +1,17 @@
 venv/
 .venv/
+
 __pycache__/
-*.pyc
+.pytest_cache/
 
-data/videos/
+*.db
+*.log
+events.jsonl
 *.mp4
+*.avi
 
-models/
-*.pt
-*.pth
+yolo11s.pt
 
-.env
+tracker_output.jpg
+
+backup_events.sql

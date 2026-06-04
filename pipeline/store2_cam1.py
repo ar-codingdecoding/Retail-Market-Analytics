@@ -1,21 +1,24 @@
+# entry gate 1 and 2
 from ultralytics import YOLO
 import supervision as sv
 import cv2
+# import time
 
 from line_counter import LineCounter
 from event_generator import EventGenerator
 from event_store import EventStore
-
+# from reid_manager import ReIDManager
 
 # --------------------------
 # CONFIG
-# --------------------------
+# ------------------
 
-VIDEO_PATH = "data/videos/CAM 3.mp4"
+VIDEO_PATH = "data/videos/entry 2.mp4"
 
-LINE_Y = 400
+LINE_Y = 380
 
 SHOW_WINDOW = True
+ 
 
 
 # --------------------------
@@ -38,6 +41,9 @@ tracker = sv.ByteTrack(
 print("Creating Event Store...")
 
 event_store = EventStore()
+# reid_manager = ReIDManager()
+
+# last_person_data = {}
 
 line_counter = LineCounter(
     line_y=LINE_Y
@@ -62,17 +68,24 @@ if not cap.isOpened():
 
 
 
+FRAME_SKIP = 3
 
 frame_count = 0
-
 while True:
     ret, frame = cap.read()
 
     if not ret:
         print("Video completed.")
         break
-
     frame_count += 1
+
+    if frame_count % FRAME_SKIP != 0:
+        continue
+
+    frame = cv2.resize(
+        frame,
+        (1280, 720)
+    )
 
     result = model(
         frame,
@@ -112,16 +125,105 @@ while True:
                 center_y = int(
                     (y1 + y2) / 2
                 )
+                # roi = frame[
+                #     int(y1):int(y2),
+                #     int(x1):int(x2)
+                # ]
+
+                # histogram = None
+
+                # if roi.size > 0:
+                #     hsv_roi = cv2.cvtColor(
+                #         roi,
+                #         cv2.COLOR_BGR2HSV
+                #     )
+
+                #     histogram = cv2.calcHist(
+                #         [hsv_roi],
+                #         [0, 1],
+                #         None,
+                #         [50, 60],
+                #         [0, 180, 0, 256]
+                #     )
+
+                #     cv2.normalize(
+                #         histogram,
+                #         histogram,
+                #         0,
+                #         1,
+                #         cv2.NORM_MINMAX
+                #     )
+
+                # old_id = reid_manager.check_reentry(
+                #     center_x,
+                #     center_y,
+                #     histogram
+                # )
+
+                # if old_id is not None:
+
+                #     now = time.time()
+
+                #     if (
+                #         track_id not in reentry_cooldown
+                #         or
+                #         now - reentry_cooldown[track_id] > REENTRY_TIMEOUT
+                #     ):
+
+                #         reentry_cooldown[track_id] = now
+
+                #         event = EventGenerator.generate(
+                #             visitor_id=track_id,
+                #             event_type="RE_ENTRY",
+                #             camera_id="STORE2_CAM1",
+                #             store_id="STORE_2",
+                #             confidence=1.0
+                #         )
+
+                #         event_store.save(event)
+
+                #         print("[RE-ENTRY]", track_id)
+
+                #         cv2.putText(
+                #             frame,
+                #             "RE-ENTRY",
+                #             (int(x1), int(y1)-40),
+                #             cv2.FONT_HERSHEY_SIMPLEX,
+                #             0.8,
+                #             (0,0,255),
+                #             2
+                #         )
+
+                #     track_id = old_id
+
+                #     cv2.putText(
+                #         frame,
+                #         "RE-ENTRY",
+                #         (int(x1), int(y1) - 40),
+                #         cv2.FONT_HERSHEY_SIMPLEX,
+                #         0.8,
+                #         (0, 0, 255),
+                #         2
+                #     )
+
+                # last_person_data[track_id] = {
+                #     "x": center_x,
+                #     "y": center_y,
+                #     "hist": histogram
+                # }
+
                 event_type = line_counter.check_crossing(
                     track_id,
                     center_y
                 )
+
                 # Event Found
                 if event_type:
                     event = EventGenerator.generate(
                         visitor_id=track_id,
                         event_type=event_type,
-                        camera_id="CAM3",
+                        camera_id="STORE2_CAM1",
+                        store_id="STORE_2",
                         confidence=1.0
                     )
                     event_store.save(
@@ -156,6 +258,14 @@ while True:
                     (0, 0, 255),
                     -1
                 )
+
+            # for track_id, data in last_person_data.items():
+            #     reid_manager.save_exit(
+            #         track_id,
+            #         data["x"],
+            #         data["y"],
+            #         data["hist"]
+            #     )
 
     if SHOW_WINDOW:
         cv2.imshow(

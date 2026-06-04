@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import supervision as sv
 import cv2
 
-from zones import CAM2_ZONES
+from zones_cam5 import CAM5_ZONES
 from zone_detector import ZoneDetector
 from zone_tracker import ZoneTracker
 from reid_manager import ReIDManager
@@ -22,23 +22,23 @@ TV_REGION = (
     300
 )
 
-STAFF_REGION = (
-    0,
-    200,
-    250,
-    650
-)
-def is_staff(center_x, center_y):
+# STAFF_REGION = (
+#     1020,
+#     300,
+#     1240,
+#     450
+# )
+# def is_staff(center_x, center_y):
 
-    x1, y1, x2, y2 = STAFF_REGION
+#     x1, y1, x2, y2 = STAFF_REGION
 
-    inside_staff_area = (
-        x1 <= center_x <= x2
-        and
-        y1 <= center_y <= y2
-    )
+#     inside_staff_area = (
+#         x1 <= center_x <= x2
+#         and
+#         y1 <= center_y <= y2
+#     )
 
-    return inside_staff_area
+#     return inside_staff_area
 
 # -----------------------------
 # INIT
@@ -54,7 +54,7 @@ tracker = sv.ByteTrack(
 )
 
 zone_detector = ZoneDetector(
-    CAM2_ZONES
+    CAM5_ZONES
 )
 reid_manager = ReIDManager()
 last_person_data = {}
@@ -65,9 +65,9 @@ event_store = EventStore()
 deduplicator = EventDeduplicator()
 
 cap = cv2.VideoCapture(
-    "data/videos/CAM 2.mp4"
+    "data/videos/CAM 5.mp4"
 )
-
+queue_active = False
 if not cap.isOpened():
 
     print("Cannot open video")
@@ -97,6 +97,7 @@ while True:
     detections = sv.Detections.from_ultralytics(
         result
     )
+    billing_count = 0
 
     # PERSON ONLY
 
@@ -138,7 +139,7 @@ while True:
 
     # DRAW ZONES
 
-    for zone_name, box in CAM2_ZONES.items():
+    for zone_name, box in CAM5_ZONES.items():
 
         x1, y1, x2, y2 = box
 
@@ -160,25 +161,25 @@ while True:
             2
         )
 
-    sx1, sy1, sx2, sy2 = STAFF_REGION
+    # sx1, sy1, sx2, sy2 = STAFF_REGION
 
-    cv2.rectangle(
-        frame,
-        (sx1, sy1),
-        (sx2, sy2),
-        (0, 0, 255),
-        2
-    )
+    # cv2.rectangle(
+    #     frame,
+    #     (sx1, sy1),
+    #     (sx2, sy2),
+    #     (0, 0, 255),
+    #     2
+    # )
 
-    cv2.putText(
-        frame,
-        "STAFF AREA",
-        (sx1 + 20, sy1 + 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 0, 255),
-        2
-    )
+    # cv2.putText(
+    #     frame,
+    #     "STAFF AREA",
+    #     (sx1 + 20, sy1 + 40),
+    #     cv2.FONT_HERSHEY_SIMPLEX,
+    #     1,
+    #     (0, 0, 255),
+    #     2
+    # )
 
     if detections.tracker_id is not None:
 
@@ -243,23 +244,25 @@ while True:
             # IGNORE TV
             # -----------------------------
 
-            tx1, ty1, tx2, ty2 = TV_REGION
+            # tx1, ty1, tx2, ty2 = TV_REGION
 
-            if (
-                tx1 <= center_x <= tx2
-                and
-                ty1 <= center_y <= ty2
-            ):
-                continue
-            if is_staff(
-                center_x,
-                center_y
-            ):
-                continue
+            # if (
+            #     tx1 <= center_x <= tx2
+            #     and
+            #     ty1 <= center_y <= ty2
+            # ):
+            #     continue
+            # if is_staff(
+            #     center_x,
+            #     center_y
+            # ):
+            #     continue
             zone = zone_detector.get_zone(
                 center_x,
                 center_y
             )
+            if zone == "BILLING":
+                billing_count += 1
 
             event = zone_tracker.update(
                 track_id,
@@ -278,7 +281,7 @@ while True:
                     data = EventGenerator.generate(
                         visitor_id=track_id,
                         event_type=event_type,
-                        camera_id="CAM2",
+                        camera_id="CAM5",
                         zone=zone_name
                     )
 
@@ -363,7 +366,7 @@ while True:
             data = EventGenerator.generate(
                 visitor_id=visitor_id,
                 event_type="ZONE_EXIT",
-                camera_id="CAM2",
+                camera_id="CAM5",
                 zone=zone_name
             )
 
@@ -372,9 +375,36 @@ while True:
             )
 
             print(data)
+            print(data)
+
+    # Queue detection based on number of people at billing
+    if billing_count >= 2:
+
+        if not queue_active:
+
+            queue_active = True
+
+            data = EventGenerator.generate(
+                visitor_id=0,
+                event_type="QUEUE_DETECTED",
+                camera_id="CAM5",
+                zone="BILLING"
+            )
+
+            event_store.save(
+                data
+            )
+
+            print(data)
+
+    else:
+
+        # reset queue flag when billing count drops
+        queue_active = False
+
 
     cv2.imshow(
-        "CAM2",
+        "CAM5",
         frame
     )
 

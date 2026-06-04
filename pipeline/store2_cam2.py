@@ -1,16 +1,16 @@
+# zone area 
+
 from ultralytics import YOLO
 import supervision as sv
 import cv2
-
-from zones import CAM2_ZONES
+from staff_detector import StaffDetector
+from zones_store2 import CAM2_STORE2_ZONES
 from zone_detector import ZoneDetector
 from zone_tracker import ZoneTracker
 from reid_manager import ReIDManager
 from event_generator import EventGenerator
 from event_store import EventStore
 from event_deduplicator import EventDeduplicator
-
-
 # -----------------------------
 # TV REGION (IGNORE)
 # -----------------------------
@@ -21,24 +21,26 @@ TV_REGION = (
     450,
     300
 )
-
-STAFF_REGION = (
-    0,
-    200,
-    250,
-    650
-)
 def is_staff(center_x, center_y):
+    return False
 
-    x1, y1, x2, y2 = STAFF_REGION
+# STAFF_REGION = (
+#     1020,
+#     300,
+#     1240,
+#     450
+# )
+# def is_staff(center_x, center_y):
 
-    inside_staff_area = (
-        x1 <= center_x <= x2
-        and
-        y1 <= center_y <= y2
-    )
+#     x1, y1, x2, y2 = STAFF_REGION
 
-    return inside_staff_area
+#     inside_staff_area = (
+#         x1 <= center_x <= x2
+#         and
+#         y1 <= center_y <= y2
+#     )
+
+#     return inside_staff_area
 
 # -----------------------------
 # INIT
@@ -54,9 +56,10 @@ tracker = sv.ByteTrack(
 )
 
 zone_detector = ZoneDetector(
-    CAM2_ZONES
+    CAM2_STORE2_ZONES
 )
 reid_manager = ReIDManager()
+staff_detector = StaffDetector()
 last_person_data = {}
 zone_tracker = ZoneTracker()
 
@@ -65,13 +68,17 @@ event_store = EventStore()
 deduplicator = EventDeduplicator()
 
 cap = cv2.VideoCapture(
-    "data/videos/CAM 2.mp4"
+    "data/videos/zone.mp4"
 )
 
 if not cap.isOpened():
 
     print("Cannot open video")
     exit()
+
+FRAME_SKIP = 3
+
+frame_count = 0
 
 # -----------------------------
 # LOOP
@@ -83,6 +90,11 @@ while True:
 
     if not ret:
         break
+
+    frame_count += 1
+
+    if frame_count % FRAME_SKIP != 0:
+        continue
 
     frame = cv2.resize(
         frame,
@@ -138,7 +150,7 @@ while True:
 
     # DRAW ZONES
 
-    for zone_name, box in CAM2_ZONES.items():
+    for zone_name, box in CAM2_STORE2_ZONES.items():
 
         x1, y1, x2, y2 = box
 
@@ -160,25 +172,25 @@ while True:
             2
         )
 
-    sx1, sy1, sx2, sy2 = STAFF_REGION
+    # sx1, sy1, sx2, sy2 = STAFF_REGION
 
-    cv2.rectangle(
-        frame,
-        (sx1, sy1),
-        (sx2, sy2),
-        (0, 0, 255),
-        2
-    )
+    # cv2.rectangle(
+    #     frame,
+    #     (sx1, sy1),
+    #     (sx2, sy2),
+    #     (0, 0, 255),
+    #     2
+    # )
 
-    cv2.putText(
-        frame,
-        "STAFF AREA",
-        (sx1 + 20, sy1 + 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 0, 255),
-        2
-    )
+    # cv2.putText(
+    #     frame,
+    #     "STAFF AREA",
+    #     (sx1 + 20, sy1 + 40),
+    #     cv2.FONT_HERSHEY_SIMPLEX,
+    #     1,
+    #     (0, 0, 255),
+    #     2
+    # )
 
     if detections.tracker_id is not None:
 
@@ -203,6 +215,10 @@ while True:
 
             roi = frame[y1:y2, x1:x2]
             histogram = None
+            if staff_detector.is_staff(
+                roi
+            ):
+                continue
 
             if roi.size > 0:
                 hsv_roi = cv2.cvtColor(
@@ -278,7 +294,8 @@ while True:
                     data = EventGenerator.generate(
                         visitor_id=track_id,
                         event_type=event_type,
-                        camera_id="CAM2",
+                        camera_id="STORE2_CAM2",
+                        store_id="STORE_2",
                         zone=zone_name
                     )
 
@@ -363,7 +380,8 @@ while True:
             data = EventGenerator.generate(
                 visitor_id=visitor_id,
                 event_type="ZONE_EXIT",
-                camera_id="CAM2",
+                camera_id="CAM1",
+                store_id="STORE_2",
                 zone=zone_name
             )
 
@@ -374,7 +392,7 @@ while True:
             print(data)
 
     cv2.imshow(
-        "CAM2",
+        "CAM1",
         frame
     )
 

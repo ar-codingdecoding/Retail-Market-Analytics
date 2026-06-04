@@ -1,8 +1,13 @@
+import time
+
+
 class EventDeduplicator:
 
     def __init__(self):
 
-        self.generated = set()
+        self.generated = {}
+
+        self.expiry_seconds = 30
 
     def should_save(
         self,
@@ -11,10 +16,21 @@ class EventDeduplicator:
         zone=None
     ):
 
-        # Allow repeated dwell events
+        now = time.time()
 
-        if event_type == "ZONE_DWELL":
-            return True
+        # cleanup old entries
+
+        expired = []
+
+        for key, timestamp in self.generated.items():
+
+            if now - timestamp > self.expiry_seconds:
+
+                expired.append(key)
+
+        for key in expired:
+
+            del self.generated[key]
 
         key = (
             visitor_id,
@@ -23,8 +39,9 @@ class EventDeduplicator:
         )
 
         if key in self.generated:
+
             return False
 
-        self.generated.add(key)
+        self.generated[key] = now
 
         return True

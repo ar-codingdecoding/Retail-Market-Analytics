@@ -53,56 +53,26 @@ class LineCounter:
             if seconds < self.cooldown_seconds:
                 return None
 
-        # ENTRY
 
-        if (
-            previous < (
-                self.line_y - self.buffer
-            )
-            and
-            center_y > (
-                self.line_y + self.buffer
-            )
-        ):
+        # ENTRY: detect crossing of the line from above to below
+        # treat equality as crossing to avoid missed events when center_y == line_y
+        if previous <= self.line_y and center_y > self.line_y:
 
-            if self.last_event.get(
-                track_id
-            ) != "ENTRY":
+            if self.last_event.get(track_id) != "ENTRY":
 
-                self.last_event[
-                    track_id
-                ] = "ENTRY"
-
-                self.last_event_time[
-                    track_id
-                ] = now
-
+                self.last_event[track_id] = "ENTRY"
+                self.last_event_time[track_id] = now
                 return "ENTRY"
 
-        # EXIT
 
-        if (
-            previous > (
-                self.line_y + self.buffer
-            )
-            and
-            center_y < (
-                self.line_y - self.buffer
-            )
-        ):
+        # EXIT: detect crossing of the line from below to above
+        # treat equality as crossing to avoid missed events when center_y == line_y
+        if previous >= self.line_y and center_y < self.line_y:
 
-            if self.last_event.get(
-                track_id
-            ) != "EXIT":
+            if self.last_event.get(track_id) != "EXIT":
 
-                self.last_event[
-                    track_id
-                ] = "EXIT"
-
-                self.last_event_time[
-                    track_id
-                ] = now
-
+                self.last_event[track_id] = "EXIT"
+                self.last_event_time[track_id] = now
                 return "EXIT"
 
         return None

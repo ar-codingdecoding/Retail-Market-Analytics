@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import supervision as sv
 import cv2
 
-from zones import CAM2_ZONES
+from zones import CAM1_ZONES
 from zone_detector import ZoneDetector
 from zone_tracker import ZoneTracker
 from reid_manager import ReIDManager
@@ -23,10 +23,10 @@ TV_REGION = (
 )
 
 STAFF_REGION = (
-    0,
-    200,
-    250,
-    650
+    1020,
+    300,
+    1240,
+    450
 )
 def is_staff(center_x, center_y):
 
@@ -54,7 +54,7 @@ tracker = sv.ByteTrack(
 )
 
 zone_detector = ZoneDetector(
-    CAM2_ZONES
+    CAM1_ZONES
 )
 reid_manager = ReIDManager()
 last_person_data = {}
@@ -65,7 +65,7 @@ event_store = EventStore()
 deduplicator = EventDeduplicator()
 
 cap = cv2.VideoCapture(
-    "data/videos/CAM 2.mp4"
+    "data/videos/CAM 1.mp4"
 )
 
 if not cap.isOpened():
@@ -138,7 +138,7 @@ while True:
 
     # DRAW ZONES
 
-    for zone_name, box in CAM2_ZONES.items():
+    for zone_name, box in CAM1_ZONES.items():
 
         x1, y1, x2, y2 = box
 
@@ -278,7 +278,7 @@ while True:
                     data = EventGenerator.generate(
                         visitor_id=track_id,
                         event_type=event_type,
-                        camera_id="CAM2",
+                        camera_id="CAM1",
                         zone=zone_name
                     )
 
@@ -363,7 +363,7 @@ while True:
             data = EventGenerator.generate(
                 visitor_id=visitor_id,
                 event_type="ZONE_EXIT",
-                camera_id="CAM2",
+                camera_id="CAM1",
                 zone=zone_name
             )
 
@@ -374,7 +374,7 @@ while True:
             print(data)
 
     cv2.imshow(
-        "CAM2",
+        "CAM1",
         frame
     )
 
