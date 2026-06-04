@@ -1,201 +1,226 @@
 # CHOICES.md
 
-## Overview
+# Engineering Decisions and Trade-Offs
 
-This document explains the key technical choices made while building the Store Intelligence system. The objective of the project is to convert CCTV footage into structured retail analytics that can be consumed through APIs and dashboards.
+## Model Selection
 
----
+### Selected Model
 
-## 1. Model Selection
+YOLO11s
 
-The detection pipeline uses YOLO11s as the primary object detection model.
+### Reasons
 
-### Why YOLO11s
-
-Several factors influenced this decision:
-
-* Real-time inference capability.
-* Good balance between speed and accuracy.
-* Strong performance on person detection tasks.
-* Easy integration with OpenCV-based video processing pipelines.
-* Availability of pretrained weights, reducing training requirements.
-
-The challenge focused on analytics generation rather than model training. Therefore, a pretrained detector was selected to prioritize reliability and development speed.
+* Fast inference speed
+* Good person detection accuracy
+* Suitable for near real-time processing
+* Lightweight deployment requirements
+* Strong performance on retail CCTV footage
 
 ### Alternatives Considered
 
-* YOLO11n: Faster but lower detection accuracy.
-* YOLO11m: Higher accuracy but increased computational cost.
-* Faster R-CNN: Accurate but unsuitable for near real-time processing.
+YOLO11n
 
-YOLO11s provided the best trade-off for this implementation.
+Pros:
 
----
+* Faster
 
-## 2. Event Schema Design
+Cons:
 
-The analytics system converts visual observations into structured events.
+* Lower accuracy
 
-Each event contains:
+YOLO11m
 
-* event_type
-* store_id
-* camera_id
-* visitor_id
-* timestamp
+Pros:
 
-Example event types:
+* Higher accuracy
 
-* ENTRY
-* EXIT
-* RE_ENTRY
-* ZONE_ENTER
-* ZONE_DWELL
-* BILLING_QUEUE_JOIN
+Cons:
 
-### Why Event-Based Architecture
+* Higher latency and compute cost
 
-Instead of directly storing metrics, raw events are stored first.
+Decision:
 
-Advantages:
-
-* Metrics can be recomputed later.
-* Historical analytics remain available.
-* New KPIs can be created without reprocessing videos.
-* Easier debugging and auditing.
-
-This design follows common event-stream processing patterns used in production analytics systems.
+YOLO11s provided the best balance between speed and accuracy.
 
 ---
 
-## 3. API Design Decision
+# Tracking Strategy
 
-The API was designed around store-level analytics endpoints.
+A tracking layer was selected to maintain customer identities across frames.
 
-Examples:
+Benefits:
 
-* GET /stores/{store_id}/metrics
-* GET /stores/{store_id}/funnel
-* GET /stores/{store_id}/heatmap
-* GET /stores/{store_id}/anomalies
-* POST /events/ingest
+* Prevents duplicate counts
+* Enables dwell-time measurement
+* Supports customer journey analysis
 
-### Reasoning
-
-The problem statement focuses on retail-store intelligence rather than individual camera feeds.
-
-Store-centric endpoints provide:
-
-* Simpler dashboard integration.
-* Easier aggregation across cameras.
-* Reduced client-side processing.
-* Clear separation between ingestion and analytics layers.
-
-The ingestion endpoint remains independent so that analytics can be generated from any detection pipeline producing compatible events.
+Without tracking, each frame would generate independent detections, reducing analytics quality.
 
 ---
 
-## Conclusion
+# Re-Identification Strategy
 
-The final architecture prioritizes simplicity, maintainability, and extensibility. The selected detector, event schema, and API structure together provide a practical foundation for retail intelligence analytics while remaining easy to deploy and evaluate.
+A dedicated ReID manager was included.
 
-# CHOICES.md
+Purpose:
 
-## Overview
+* Link customers across cameras
+* Improve visitor counting accuracy
+* Support store-level analytics
 
-This document explains the key technical choices made while building the Store Intelligence system. The objective of the project is to convert CCTV footage into structured retail analytics that can be consumed through APIs and dashboards.
+Trade-Off:
 
----
-
-## 1. Model Selection
-
-The detection pipeline uses YOLO11s as the primary object detection model.
-
-### Why YOLO11s
-
-Several factors influenced this decision:
-
-* Real-time inference capability.
-* Good balance between speed and accuracy.
-* Strong performance on person detection tasks.
-* Easy integration with OpenCV-based video processing pipelines.
-* Availability of pretrained weights, reducing training requirements.
-
-The challenge focused on analytics generation rather than model training. Therefore, a pretrained detector was selected to prioritize reliability and development speed.
-
-### Alternatives Considered
-
-* YOLO11n: Faster but lower detection accuracy.
-* YOLO11m: Higher accuracy but increased computational cost.
-* Faster R-CNN: Accurate but unsuitable for near real-time processing.
-
-YOLO11s provided the best trade-off for this implementation.
+Additional processing complexity was accepted in exchange for improved analytics quality.
 
 ---
 
-## 2. Event Schema Design
+# Staff Exclusion Strategy
 
-The analytics system converts visual observations into structured events.
+Staff exclusion was implemented because employees can heavily bias retail metrics.
 
-Each event contains:
+Benefits:
 
-* event_type
-* store_id
-* camera_id
-* visitor_id
-* timestamp
-
-Example event types:
-
-* ENTRY
-* EXIT
-* RE_ENTRY
-* ZONE_ENTER
-* ZONE_DWELL
-* BILLING_QUEUE_JOIN
-
-### Why Event-Based Architecture
-
-Instead of directly storing metrics, raw events are stored first.
-
-Advantages:
-
-* Metrics can be recomputed later.
-* Historical analytics remain available.
-* New KPIs can be created without reprocessing videos.
-* Easier debugging and auditing.
-
-This design follows common event-stream processing patterns used in production analytics systems.
+* Accurate visitor counts
+* Better dwell-time measurements
+* More realistic conversion calculations
 
 ---
 
-## 3. API Design Decision
+# Event Schema Design
 
-The API was designed around store-level analytics endpoints.
+JSONL was selected as the primary event format.
 
-Examples:
+Reasons:
 
-* GET /stores/{store_id}/metrics
-* GET /stores/{store_id}/funnel
-* GET /stores/{store_id}/heatmap
-* GET /stores/{store_id}/anomalies
-* POST /events/ingest
+* Human readable
+* Stream friendly
+* Easy to validate
+* Easy ingestion into databases
+* Compatible with analytics pipelines
 
-### Reasoning
-
-The problem statement focuses on retail-store intelligence rather than individual camera feeds.
-
-Store-centric endpoints provide:
-
-* Simpler dashboard integration.
-* Easier aggregation across cameras.
-* Reduced client-side processing.
-* Clear separation between ingestion and analytics layers.
-
-The ingestion endpoint remains independent so that analytics can be generated from any detection pipeline producing compatible events.
+Each line represents a single independent event.
 
 ---
 
-## Conclusion
+# Database Selection
 
-The final architecture prioritizes simplicity, maintainability, and extensibility. The selected detector, event schema, and API structure together provide a practical foundation for retail intelligence analytics while remaining easy to deploy and evaluate.
+SQLite was selected.
+
+Reasons:
+
+* Lightweight
+* Zero configuration
+* Fast local development
+* Suitable for challenge scope
+
+Alternative:
+
+PostgreSQL
+
+Pros:
+
+* Better scalability
+
+Cons:
+
+* Additional deployment complexity
+
+Decision:
+
+SQLite was sufficient for challenge requirements.
+
+---
+
+# API Architecture
+
+FastAPI was selected.
+
+Reasons:
+
+* Automatic OpenAPI generation
+* Swagger UI support
+* High performance
+* Easy validation with Pydantic
+
+Benefits for reviewers:
+
+* Easy endpoint testing
+* Self-documenting API
+* Simple deployment
+
+---
+
+# Dashboard Technology
+
+Streamlit was selected.
+
+Reasons:
+
+* Fast development cycle
+* Interactive analytics support
+* Simple deployment
+* Strong visualization ecosystem
+
+---
+
+# Deployment Decisions
+
+API Deployment:
+Render
+
+Dashboard Deployment:
+Streamlit Community Cloud
+
+Reasons:
+
+* Public accessibility
+* Minimal infrastructure management
+* Easy reviewer access
+
+---
+
+# Event Processing Design
+
+A modular pipeline architecture was selected.
+
+Components:
+
+* Detection
+* Tracking
+* ReID
+* Staff Filtering
+* Zone Analytics
+* Event Generation
+
+Benefits:
+
+* Easier testing
+* Easier maintenance
+* Independent component upgrades
+
+---
+
+# Testing Approach
+
+Testing focused on:
+
+* Event generation correctness
+* API endpoint validation
+* JSONL format validation
+* Tracking consistency
+* Edge-case handling
+
+---
+
+# AI-Assisted Decisions
+
+AI tools were used during development as engineering assistants for:
+
+* Exploring alternative designs
+* Reviewing architecture options
+* Comparing deployment strategies
+* Improving documentation clarity
+
+AI tools were not used as autonomous decision makers.
+
+All final implementation decisions, validation, debugging, testing, and engineering trade-offs were performed and verified manually by the project author.
