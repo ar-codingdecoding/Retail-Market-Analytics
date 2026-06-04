@@ -57,17 +57,29 @@ This project provides an automated analytics pipeline that:
 ## System Architecture
 
 CCTV Streams
+
 ↓
+
 Detection & Tracking Pipeline
+
 ↓
+
 Event Generation
+
 ↓
+
 Event Deduplication
+
 ↓
+
 SQLite Event Store
+
 ↓
+
 FastAPI Analytics Service
+
 ↓
+
 Streamlit Dashboard
 
 ---
