@@ -11,7 +11,7 @@ st.set_page_config(
 
 st.title("🛍️ Store Intelligence Dashboard")
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "https://store-intelligence-api-qkiu.onrender.com")
 refresh = st.sidebar.checkbox(
     "Auto Refresh",
     value=True
