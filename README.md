@@ -190,11 +190,11 @@ https://ar-codingdecoding-retail-market-analytics-dashboardapp-ppwlh6.streamlit.
 
 ### API
 
-https://store-intelligence-api-qkiu.onrender.com
+[https://store-intelligence-api-qkiu.onrender.com](https://store-intelligence-api-qkiu.onrender.com)
 
 ### Swagger UI
 
-https://store-intelligence-api-qkiu.onrender.com/docs
+[https://store-intelligence-api-qkiu.onrender.com/docs](https://store-intelligence-api-qkiu.onrender.com/docs)
 
 ---
 
