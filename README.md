@@ -1,64 +1,196 @@
-# Store Intelligence System
+# Retail Market Analytics – Store Intelligence Platform
 
-AI-powered retail analytics platform built using CCTV footage, computer vision, event-driven architecture, and real-time analytics APIs.
+## Overview
 
----
+Retail Market Analytics is a multi-camera retail intelligence platform that converts CCTV footage into actionable business insights. The system processes customer movement events from different store zones and generates analytics for store operations, customer engagement, and decision-making.
 
-# Overview
-
-This project converts raw CCTV footage into actionable retail intelligence.
-
-The system:
-
-* Detects customers using YOLO11
-* Tracks visitors using ByteTrack
-* Detects zone interactions
-* Generates behavioral events
-* Stores events in SQLite
-* Exposes analytics through FastAPI
-* Visualizes metrics through a dashboard
+The solution was developed for the Purplle Tech Challenge 2026.
 
 ---
 
-# Features
+## Problem Statement
 
-## Detection Pipeline
+Retail stores generate large amounts of video data through CCTV systems. Manually analyzing customer behavior, zone engagement, and store traffic is difficult and not scalable.
 
-* Person Detection (YOLO11s)
-* Multi-Object Tracking (ByteTrack)
-* Zone Classification
-* Zone Enter Events
-* Zone Exit Events
-* Zone Dwell Events
+This project provides an automated analytics pipeline that:
+
+* Tracks customer movement across store zones
+* Measures engagement and dwell behavior
+* Generates funnel analytics
+* Detects anomalies in store activity
+* Produces heatmap-style zone popularity insights
+* Exposes analytics through APIs and an interactive dashboard
 
 ---
 
-## Analytics API
+## Features
 
-### Health
+### Customer Analytics
+
+* Unique visitor estimation
+* Customer movement tracking
+* Zone entry detection
+* Dwell-time monitoring
+
+### Business Intelligence
+
+* Conversion funnel analytics
+* Store performance metrics
+* Zone popularity analysis
+* Customer engagement measurement
+
+### Monitoring
+
+* Anomaly detection
+* Real-time event ingestion
+* Health monitoring API
+
+### Visualization
+
+* Interactive dashboard
+* Funnel charts
+* Traffic heatmaps
+* Store-wise and camera-wise analytics
+
+---
+
+## System Architecture
+
+CCTV Streams
+↓
+Detection & Tracking Pipeline
+↓
+Event Generation
+↓
+Event Deduplication
+↓
+SQLite Event Store
+↓
+FastAPI Analytics Service
+↓
+Streamlit Dashboard
+
+---
+
+## Technology Stack
+
+### Computer Vision
+
+* YOLO (Ultralytics)
+* OpenCV
+* Supervision
+
+### Backend
+
+* FastAPI
+* SQLAlchemy
+* SQLite
+
+### Dashboard
+
+* Streamlit
+* Plotly
+* Pandas
+
+### Deployment
+
+* Docker
+* Render
+* Streamlit Community Cloud
+
+---
+
+## Repository Structure
+
+## Repository Structure
+
+```text
+STORE-INTELLIGENCE/
+│
+├── app/
+│   ├── __init__.py
+│   ├── database.py
+│   ├── ingest.py
+│   ├── main.py
+│   ├── models.py
+│   └── services.py
+│
+├── dashboard/
+│   └── app.py
+│
+├── pipeline/
+│   ├── emit.py
+│   ├── event_deduplicator.py
+│   ├── event_generator.py
+│   ├── event_store.py
+│   ├── event_types.py
+│   ├── events.py
+│   ├── line_counter.py
+│   ├── reid_manager.py
+│   ├── tracker.py
+│   ├── zone_detector.py
+│   ├── zone_tracker.py
+│   ├── zones.py
+│   ├── staff_detector.py
+│   ├── main.py
+│   │
+│   ├── run_cam1.py
+│   ├── run_cam2.py
+│   ├── run_cam3.py
+│   ├── run_cam5.py
+│   │
+│   ├── store2_cam1.py
+│   ├── store2_cam2.py
+│   ├── store2_cam6.py
+│   │
+│   ├── zones_cam5.py
+│   └── zones_store2.py
+│
+├── data/
+│   └── videos/
+│
+├── tests/
+│
+├── CHOICES.md
+├── DESIGN.md
+├── README.md
+│
+├── sample_events.jsonl
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+│
+├── .gitignore
+├── .dockerignore
+└── .gitattributes
+```
+
+
+---
+
+## Live Deployment
+
+### Dashboard
+
+https://ar-codingdecoding-retail-market-analytics-dashboardapp-ppwlh6.streamlit.app/
+
+### API
+
+https://store-intelligence-api-qkiu.onrender.com
+
+### Swagger UI
+
+https://store-intelligence-api-qkiu.onrender.com/docs
+
+---
+
+## API Endpoints
+
+### Health Check
 
 ```http
 GET /health
 ```
-
-Returns service status.
-
----
-
-### Event Ingestion
-
-```http
-POST /events/ingest
-```
-
-Features:
-
-* Batch ingestion
-* Deduplication
-* Partial success handling
-* Event validation
-
----
 
 ### Metrics
 
@@ -66,242 +198,130 @@ Features:
 GET /stores/{store_id}/metrics
 ```
 
-Returns:
-
-* Total Events
-* Zone Entries
-* Dwell Events
-
----
-
-### Funnel
+### Funnel Analytics
 
 ```http
 GET /stores/{store_id}/funnel
 ```
 
-Returns visitor engagement funnel.
-
----
-
-### Heatmap
+### Heatmap Analytics
 
 ```http
 GET /stores/{store_id}/heatmap
 ```
 
-Returns:
-
-* Zone popularity
-* Normalized scores (0–100)
-* Data confidence indicator
-
----
-
-### Anomalies
+### Anomaly Detection
 
 ```http
 GET /stores/{store_id}/anomalies
 ```
 
-Returns detected operational anomalies.
+### Event Ingestion
 
----
-
-# Project Structure
-
-```text
-store-intelligence/
-
-├── app/
-│   ├── main.py
-│   ├── database.py
-│   ├── models.py
-│   ├── services.py
-│
-├── pipeline/
-│   ├── run_cam1.py
-│   ├── run_cam2.py
-│   ├── zone_detector.py
-│   ├── zone_tracker.py
-│   └── zones.py
-│
-├── dashboard/
-│   └── dashboard.py
-│
-├── docs/
-│   ├── DESIGN.md
-│   └── CHOICES.md
-│
-├── events.jsonl
-├── retail.db
-├── README.md
+```http
+POST /events/ingest
 ```
 
 ---
 
-# Installation
+## Local Setup
 
-## Clone Repository
+### Clone Repository
 
 ```bash
-git clone <repository_url>
-cd store-intelligence
+git clone https://github.com/ar-codingdecoding/Retail-Market-Analytics.git
+cd Retail-Market-Analytics
 ```
 
----
-
-## Create Virtual Environment
+### Create Virtual Environment
 
 ```bash
-python -m venv venv
+python -m venv .venv
 ```
 
-Activate:
+### Activate Environment
 
 Windows
 
 ```bash
-venv\Scripts\activate
+.venv\Scripts\activate
 ```
 
 Linux/Mac
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
----
-
-## Install Dependencies
+### Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-# Running Detection Pipeline
-
-CAM1
-
-```bash
-python pipeline/run_cam1.py
-```
-
-CAM2
-
-```bash
-python pipeline/run_cam2.py
-```
-
-Generated events are written to:
-
-```text
-events.jsonl
-```
-
----
-
-# Import Events Into Database
-
-```bash
-python -m app.ingest
-```
-
-This populates:
-
-```text
-retail.db
-```
-
----
-
-# Run API
+### Run API
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Swagger:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-# Run Dashboard
+### Run Dashboard
 
 ```bash
-streamlit run dashboard/dashboard.py
+streamlit run dashboard/app.py
 ```
 
-Dashboard URL:
+---
+
+## Docker Deployment
+
+Build Image
+
+```bash
+docker compose build
+```
+
+Run Containers
+
+```bash
+docker compose up
+```
+
+API will be available at:
 
 ```text
-http://localhost:8501
+http://localhost:8000
+```
+
+Swagger UI:
+
+```text
+http://localhost:8000/docs
 ```
 
 ---
 
-# Event Schema
+## Assumptions
 
-Example:
-
-```json
-{
-  "event_id": "uuid",
-  "visitor_id": "5",
-  "event_type": "ZONE_ENTER",
-  "camera_id": "CAM2",
-  "zone": "DISPLAY",
-  "confidence": 1.0,
-  "timestamp": "2026-06-01T15:51:02"
-}
-```
+* Event data is generated from processed CCTV streams.
+* Sample event data is provided for demonstration.
+* SQLite is used for lightweight deployment and evaluation.
+* Analytics are computed from stored event records.
 
 ---
 
-# Known Limitations
+## Documentation
 
-## Staff Detection
+Additional technical documentation is available in:
 
-A fixed-region and rule-based approach was evaluated but not enabled by default due to overlap between customer and staff movement patterns.
-
----
-
-## Re-Identification
-
-A lightweight ReID prototype was explored. A production-grade implementation would require appearance embeddings and a labeled identity dataset.
+* docs/DESIGN.md
+* docs/CHOICES.md
 
 ---
 
-# Future Improvements
+## Authors
 
-* DeepSORT / StrongSORT
-* Person ReID embeddings
-* Billing Queue Analytics
-* POS Correlation
-* Kafka Event Streaming
-* PostgreSQL Backend
-* Multi-Camera Tracking
-* WebSocket Live Updates
-
----
-
-# Technologies Used
-
-* Python
-* OpenCV
-* YOLO11s
-* ByteTrack
-* FastAPI
-* SQLite
-* Streamlit
-
----
-
-# Conclusion
-
-The Store Intelligence System demonstrates an end-to-end pipeline that transforms CCTV footage into real-time retail analytics through detection, tracking, event generation, analytics APIs, anomaly detection, and dashboard visualization.
+Ajay Raj
+Email-id: ar.bppimt2022@gmail.com
+B.Tech Final Year
+Retail Market Analytics – Purplle Tech Challenge 2026 Submission
