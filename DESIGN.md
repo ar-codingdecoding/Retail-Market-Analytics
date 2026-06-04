@@ -1,100 +1,231 @@
-# CHOICES.md
+# DESIGN.md
+
+# Retail Market Analytics System Design
 
 ## Overview
 
-This document explains the key technical choices made while building the Store Intelligence system. The objective of the project is to convert CCTV footage into structured retail analytics that can be consumed through APIs and dashboards.
+This solution processes multi-camera retail CCTV footage to generate structured retail analytics events. The system performs customer detection, tracking, re-identification, zone analytics, dwell-time measurement, entry/exit counting, staff exclusion, and anomaly detection.
+
+The architecture is designed as a modular pipeline that can process multiple camera streams independently while producing a unified analytics layer.
 
 ---
 
-## 1. Model Selection
+# System Architecture
 
-The detection pipeline uses YOLO11s as the primary object detection model.
-
-### Why YOLO11s
-
-Several factors influenced this decision:
-
-* Real-time inference capability.
-* Good balance between speed and accuracy.
-* Strong performance on person detection tasks.
-* Easy integration with OpenCV-based video processing pipelines.
-* Availability of pretrained weights, reducing training requirements.
-
-The challenge focused on analytics generation rather than model training. Therefore, a pretrained detector was selected to prioritize reliability and development speed.
-
-### Alternatives Considered
-
-* YOLO11n: Faster but lower detection accuracy.
-* YOLO11m: Higher accuracy but increased computational cost.
-* Faster R-CNN: Accurate but unsuitable for near real-time processing.
-
-YOLO11s provided the best trade-off for this implementation.
-
----
-
-## 2. Event Schema Design
-
-The analytics system converts visual observations into structured events.
-
-Each event contains:
-
-* event_type
-* store_id
-* camera_id
-* visitor_id
-* timestamp
-
-Example event types:
-
-* ENTRY
-* EXIT
-* RE_ENTRY
-* ZONE_ENTER
-* ZONE_DWELL
-* BILLING_QUEUE_JOIN
-
-### Why Event-Based Architecture
-
-Instead of directly storing metrics, raw events are stored first.
-
-Advantages:
-
-* Metrics can be recomputed later.
-* Historical analytics remain available.
-* New KPIs can be created without reprocessing videos.
-* Easier debugging and auditing.
-
-This design follows common event-stream processing patterns used in production analytics systems.
+```text
+CCTV Video Streams
+        |
+        v
+Person Detection (YOLO11s)
+        |
+        v
+Multi-Object Tracking
+        |
+        v
+Person Re-Identification
+        |
+        v
+Staff Exclusion
+        |
+        v
+Zone & Line Analytics
+        |
+        v
+Event Generation
+        |
+        v
+JSONL Event Log
+        |
+        v
+FastAPI Analytics Service
+        |
+        v
+Streamlit Dashboard
+```
 
 ---
 
-## 3. API Design Decision
+# Detection Layer
 
-The API was designed around store-level analytics endpoints.
+The system uses YOLO11s for person detection.
+
+Responsibilities:
+
+* Detect people in video frames
+* Provide bounding boxes
+* Maintain real-time processing capability
+* Support multiple camera views
+
+Only the person class is used for analytics generation.
+
+---
+
+# Tracking Layer
+
+A tracker assigns temporary IDs to detected customers.
+
+Responsibilities:
+
+* Maintain customer identity across frames
+* Reduce duplicate counting
+* Support dwell-time calculations
+* Provide trajectory information
+
+---
+
+# Re-Identification Layer
+
+The ReID manager links observations of the same customer across different cameras.
+
+Benefits:
+
+* Reduces duplicate visitor counts
+* Supports cross-camera customer journeys
+* Enables accurate store-level analytics
+
+---
+
+# Staff Exclusion
+
+Staff members can repeatedly appear throughout the day and distort analytics.
+
+The system excludes staff using:
+
+* Persistent presence duration
+* Frequent reappearance patterns
+* Dedicated staff detection logic
+
+Benefits:
+
+* Improved visitor counts
+* More accurate dwell-time metrics
+* Better conversion analytics
+
+---
+
+# Zone Analytics
+
+Zones are configured for important store areas.
 
 Examples:
 
-* GET /stores/{store_id}/metrics
-* GET /stores/{store_id}/funnel
-* GET /stores/{store_id}/heatmap
-* GET /stores/{store_id}/anomalies
-* POST /events/ingest
+* Entrance
+* Billing Area
+* Product Display Area
+* Promotional Zone
 
-### Reasoning
+Generated events:
 
-The problem statement focuses on retail-store intelligence rather than individual camera feeds.
-
-Store-centric endpoints provide:
-
-* Simpler dashboard integration.
-* Easier aggregation across cameras.
-* Reduced client-side processing.
-* Clear separation between ingestion and analytics layers.
-
-The ingestion endpoint remains independent so that analytics can be generated from any detection pipeline producing compatible events.
+* zone_enter
+* zone_exit
+* zone_dwell
 
 ---
 
-## Conclusion
+# Entry / Exit Analytics
 
-The final architecture prioritizes simplicity, maintainability, and extensibility. The selected detector, event schema, and API structure together provide a practical foundation for retail intelligence analytics while remaining easy to deploy and evaluate.
+Virtual counting lines are configured near store entrances.
+
+Generated events:
+
+* entry
+* exit
+
+These events drive footfall analytics.
+
+---
+
+# Event Generation
+
+All analytics are converted into structured JSONL events.
+
+Example event types:
+
+* entry
+* exit
+* zone_enter
+* zone_exit
+* zone_dwell
+* anomaly
+
+Events are written to:
+
+sample_events.jsonl
+
+and
+
+events.jsonl
+
+for downstream analytics.
+
+---
+
+# Analytics API
+
+FastAPI exposes analytics endpoints.
+
+Available endpoints:
+
+* /health
+* /events/ingest
+* /stores/{store_id}/metrics
+* /stores/{store_id}/heatmap
+* /stores/{store_id}/funnel
+* /stores/{store_id}/anomalies
+
+The API layer aggregates event data into business metrics.
+
+---
+
+# Dashboard
+
+The Streamlit dashboard provides:
+
+* Store-level analytics
+* Camera-wise analytics
+* Event distribution
+* Customer funnel
+* Zone popularity
+* Heatmap visualizations
+* Anomaly monitoring
+
+---
+
+# Data Storage
+
+SQLite is used for lightweight analytics storage.
+
+Stored information:
+
+* Aggregated metrics
+* Event summaries
+* Heatmap statistics
+
+---
+
+# Scalability Considerations
+
+The architecture is intentionally modular.
+
+Future enhancements:
+
+* PostgreSQL backend
+* Kafka event streaming
+* Distributed camera processing
+* GPU inference servers
+* Cloud-native deployment
+
+---
+
+# AI-Assisted Decisions
+
+AI tools were used as engineering assistants for:
+
+* Reviewing architecture options
+* Comparing deployment approaches
+* Improving documentation quality
+* Evaluating alternative API structures
+
+All final design decisions, implementation, testing, and validation were performed manually by the project author.
+
+The submitted solution reflects independently verified engineering decisions.
