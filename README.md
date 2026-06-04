@@ -301,6 +301,14 @@ http://localhost:8000/docs
 
 ---
 
+## Sample Event Data
+
+The repository includes sample_events.jsonl and events.jsonl
+containing generated retail analytics events following the
+required challenge schema.
+
+These files can be used to reproduce dashboard analytics and API outputs.
+
 ## Assumptions
 
 * Event data is generated from processed CCTV streams.
