@@ -6,7 +6,7 @@ __pycache__/
 
 *.db
 *.log
-events.jsonl
+
 *.mp4
 *.avi
 
