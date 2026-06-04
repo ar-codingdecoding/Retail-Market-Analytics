@@ -322,6 +322,9 @@ Additional technical documentation is available in:
 ## Authors
 
 Ajay Raj
+
 Email-id: ar.bppimt2022@gmail.com
+
 B.Tech Final Year
+
 Retail Market Analytics – Purplle Tech Challenge 2026 Submission
