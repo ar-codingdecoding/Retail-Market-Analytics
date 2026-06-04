@@ -341,13 +341,8 @@ Additional technical documentation is available in:
 
 Ajay Raj
 
-<<<<<<< HEAD
 Email-id: ar.bppimt2022@gmail.com
 
 B.Tech Final Year
 
-=======
-B.Tech Final Year
-
->>>>>>> da47b6b (Retail Market Analytics for Hackathon)
 Retail Market Analytics – Purplle Tech Challenge 2026 Submission
