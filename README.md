@@ -316,9 +316,6 @@ Swagger UI:
 http://localhost:8000/docs
 ```
 
----
-
-<<<<<<< HEAD
 ## Sample Event Data
 
 The repository includes sample_events.jsonl and events.jsonl
@@ -327,12 +324,9 @@ required challenge schema.
 
 These files can be used to reproduce dashboard analytics and API outputs.
 
+
 ## Assumptions
 
-=======
-## Assumptions
-
->>>>>>> da47b6b (Retail Market Analytics for Hackathon)
 * Event data is generated from processed CCTV streams.
 * Sample event data is provided for demonstration.
 * SQLite is used for lightweight deployment and evaluation.
